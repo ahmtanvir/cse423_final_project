@@ -128,12 +128,20 @@ rift_cells = set()
 tree_obstacles = []
 
 
+# Explanation:
+# Converts a logical ASCII-map cell into an (x, y) position in the 3D world.
+# Columns increase along X, rows are inverted along Y, and subtracting half of
+# the map size keeps world coordinate (0, 0) near the center of the level.
 def world_from_cell(row, col):
     x = (col + 0.5) * CELL - WORLD_W / 2.0
     y = WORLD_H / 2.0 - (row + 0.5) * CELL
     return x, y
 
 
+# Explanation:
+# Rebuilds all map-derived data whenever a new game begins. It copies the ASCII
+# layout, extracts the player/Core/enemy/crystal positions, changes those marker
+# cells into walkable ground, and deterministically places scenery and trees.
 def build_map():
     global grid, player_start, core_position, enemy_spawn_points
     global crystal_positions, bridge_position, decorations_by_cell, rift_cells
@@ -254,17 +262,29 @@ def build_map():
                 rift_cells.add((row, col))
 
 
+# Explanation:
+# Looks up which ASCII-map symbol occupies a world-space point. Coordinates are
+# first converted to row/column indices; positions outside the map return "#"
+# so collision code safely treats the outer world as a solid boundary.
 def cell_at_world(x, y):
     row, col = cell_indices_from_world(x, y)
     if row < 0 or row >= MAP_H or col < 0 or col >= MAP_W:
         return "#"
     return grid[row][col]
 
+# Explanation:
+# Performs the inverse transformation of world_from_cell(). Integer floor
+# division maps continuous player/projectile coordinates back into the discrete
+# grid used by collision detection, traps, and enemy pathfinding.
 def cell_indices_from_world(x, y):
     col = int((x + WORLD_W / 2.0) // CELL)
     row = int((WORLD_H / 2.0 - y) // CELL)
     return row, col
 
+# Explanation:
+# Uses elapsed time plus a cell-specific phase offset to animate different traps
+# at different moments. The returned 0.0-to-1.0 value controls spike height and
+# is also used by damage logic to decide when a trap is dangerous.
 def trap_extension(row, col):
     cycle = (elapsed_game_time * 0.52 + row * 0.17 + col * 0.11) % 1.0
     if cycle < 0.16 or cycle >= 0.84:
@@ -279,6 +299,10 @@ def trap_extension(row, col):
     return 1.0 - amount * amount * (3.0 - 2.0 * amount)
 
 
+# Explanation:
+# Creates a breadth-first-search distance field from a target cell through every
+# walkable neighbor. Enemies can then follow decreasing distance values around
+# walls instead of moving directly through buildings; fields are cached by cell.
 def build_navigation_field(target_x, target_y):
     global navigation_field_cache
     target_row, target_col = cell_indices_from_world(target_x, target_y)
@@ -313,6 +337,10 @@ def build_navigation_field(target_x, target_y):
     navigation_field_cache[key] = field
     return field
 
+# Explanation:
+# Reads the target's cached navigation field and compares the four neighboring
+# cells around an enemy. It returns the center of the reachable neighbor with
+# the lowest distance value, or the direct target when no route entry exists.
 def navigation_waypoint(start_x, start_y, target_x, target_y):
     field = build_navigation_field(target_x, target_y)
     start_cell = cell_indices_from_world(start_x, start_y)
@@ -321,6 +349,10 @@ def navigation_waypoint(start_x, start_y, target_x, target_y):
         return target_x, target_y
     return world_from_cell(*next_cell)
 
+# Explanation:
+# Samples the center and several points around the player's collision circle.
+# Movement is rejected when any sample reaches a solid map cell or when the
+# circle overlaps one of the separately stored procedural tree trunks.
 def is_blocked(x, y):
     sample_points = [
         (x, y),
@@ -337,6 +369,10 @@ def is_blocked(x, y):
         for tree_x, tree_y, tree_radius in tree_obstacles
     )
 
+# Explanation:
+# Checks a projectile point against every stored tree center and radius. Trees
+# are decorative objects outside the ASCII collision grid, so bullets need this
+# additional test to stop visibly at trunks instead of passing through them.
 def projectile_hits_tree(x, y):
     return any(
         (x - tree_x) ** 2 + (y - tree_y) ** 2 < (tree_radius + 4.0) ** 2
@@ -409,14 +445,26 @@ emp_origin_y = 0.0
 sentry_charges = SENTRY_MAX_CHARGES
 
 
+# Explanation:
+# Replaces the current HUD status text and records how many seconds it should
+# remain visible. Gameplay systems call this helper for objectives, warnings,
+# damage feedback, equipment errors, and final mission messages.
 def set_status(message, duration=3.0):
     global status_message, status_message_timer
     status_message = message
     status_message_timer = duration
 
+# Explanation:
+# Scans the Anchor dictionaries and counts entries whose active flag is false.
+# The result represents mission stage and is reused to scale enemy speed,
+# population, Anchor fire rate, HUD progress, and score-event messaging.
 def anchors_destroyed_count():
     return sum(1 for anchor in rift_anchors if not anchor["active"])
 
+# Explanation:
+# Builds all state needed by one Rift Beast: position, health, speed, damage,
+# detection, animation timers, heading, and AI cooldowns. The selected spawn
+# index and current mission pressure determine whether it is a normal or brute.
 def create_enemy(spawn_index):
     x, y = enemy_spawn_points[spawn_index % len(enemy_spawn_points)]
     stage_pressure = anchors_destroyed_count() * 0.08
@@ -448,10 +496,18 @@ def create_enemy(spawn_index):
         "damaged_timer": 0.0,
     }
 
+# Explanation:
+# Resets the attack-animation timer and swaps which hand performs the next claw
+# strike. Damage is handled by update_enemies(); this helper only synchronizes
+# the visible lunge and alternating left/right arm movement.
 def begin_enemy_attack(enemy):
     enemy["attack_animation"] = ENEMY_ATTACK_ANIMATION_DURATION
     enemy["attack_side"] *= -1.0
 
+# Explanation:
+# Completely initializes a fresh play session. It rebuilds the map, restores
+# player/Core/Grid statistics, clears dynamic objects and input state, creates
+# three crystals with Anchors, spawns the starting enemies, and resets tools.
 def reset_game():
     global player_x, player_y, player_z, vertical_velocity
     global player_yaw, player_pitch, is_grounded, is_sitting
@@ -550,10 +606,18 @@ def reset_game():
 
 
 # Drawing helpers
+# Explanation:
+# Applies the requested RGB color and draws a GLUT cube of the given size. This
+# small wrapper keeps repeated building, debris, HUD-model, and machine geometry
+# consistent without introducing forbidden display lists or vertex buffers.
 def draw_cube(size, color):
     glColor3f(*color)
     glutSolidCube(size)
 
+# Explanation:
+# Computes the vector, length, and rotation from start to end, then transforms a
+# GLU cylinder so its local Z axis follows that vector. It returns immediately
+# for nearly identical points because a zero-length cylinder has no direction.
 def draw_cylinder_between(start, end, radius, color):
     dx = end[0] - start[0]
     dy = end[1] - start[1]
@@ -572,6 +636,10 @@ def draw_cylinder_between(start, end, radius, color):
     gluCylinder(quadric, radius, radius * 0.9, length, 10, 4)
     glPopMatrix()
 
+# Explanation:
+# Temporarily replaces the perspective projection with a pixel-based 2D view,
+# writes every character with a GLUT bitmap font, and then restores both matrix
+# stacks so later 3D objects continue using the first-person camera.
 def draw_text(x, y, message, font=GLUT_BITMAP_HELVETICA_18,
               color=(1.0, 1.0, 1.0)):
     glColor3f(*color)
@@ -590,6 +658,10 @@ def draw_text(x, y, message, font=GLUT_BITMAP_HELVETICA_18,
     glPopMatrix()
     glMatrixMode(GL_MODELVIEW)
 
+# Explanation:
+# Saves the projection/model-view matrices, creates a window-sized orthographic
+# coordinate system, and disables world-only depth, lighting, and fog. Every
+# call must be paired with end_overlay() to keep OpenGL state balanced.
 def begin_overlay():
     glMatrixMode(GL_PROJECTION)
     glPushMatrix()
@@ -602,6 +674,10 @@ def begin_overlay():
     glDisable(GL_LIGHTING)
     glDisable(GL_FOG)
 
+# Explanation:
+# Finishes a 2D overlay section by restoring the saved model-view and projection
+# matrices and re-enabling depth testing. World lighting/fog are restored later
+# by enable_world_rendering() before the next 3D frame.
 def end_overlay():
     glEnable(GL_DEPTH_TEST)
     glPopMatrix()
@@ -609,6 +685,10 @@ def end_overlay():
     glPopMatrix()
     glMatrixMode(GL_MODELVIEW)
 
+# Explanation:
+# Submits one four-vertex screen-space quad. Three-component colors are treated
+# as opaque RGB, while four-component colors preserve alpha for translucent HUD
+# backgrounds, health bars, damage borders, and progress panels.
 def draw_screen_rect(x1, y1, x2, y2, color):
     if len(color) == 4:
         glColor4f(*color)
@@ -621,6 +701,10 @@ def draw_screen_rect(x1, y1, x2, y2, color):
     glVertex2f(x1, y2)
     glEnd()
 
+# Explanation:
+# Builds a filled 2D circle from a center point and evenly spaced edge points.
+# The configurable segment count balances roundness against immediate-mode
+# drawing cost, and RGB/RGBA colors are both accepted.
 def draw_screen_circle(center_x, center_y, radius, color, segments=28):
     if len(color) == 4:
         glColor4f(*color)
@@ -634,6 +718,10 @@ def draw_screen_circle(center_x, center_y, radius, color, segments=28):
                    center_y + sin(angle) * radius)
     glEnd()
 
+# Explanation:
+# Draws one map cell as four subtly varied floor triangles so the large ground
+# does not look like a flat checkerboard. The map symbol and row select road,
+# terrain, or hazard colors, and selected cells receive glowing Rift scars.
 def draw_floor_tile(row, col, symbol):
     x1 = col * CELL - WORLD_W / 2.0
     y1 = WORLD_H / 2.0 - (row + 1) * CELL
@@ -693,6 +781,10 @@ def draw_floor_tile(row, col, symbol):
         glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Uses trap_extension() to raise nine cone-shaped spikes from a metal pressure
+# plate. Corner lights change from amber to red with the danger phase, giving
+# the player a readable visual warning before update_hazards() applies damage.
 def draw_spike_trap(row, col):
     x, y = world_from_cell(row, col)
     extension = trap_extension(row, col)
@@ -745,6 +837,10 @@ def draw_spike_trap(row, col):
     glEnable(GL_LIGHTING)
     glPopMatrix()
 
+# Explanation:
+# Renders a camera-centered sky backdrop before world lighting is enabled. It
+# combines immediate-mode gradients and primitive geometry for the moon, stars,
+# clouds, and animated birds so no texture, shader, or external asset is needed.
 def draw_sky():
     glMatrixMode(GL_PROJECTION)
     glPushMatrix()
@@ -856,6 +952,10 @@ def draw_sky():
     glMatrixMode(GL_MODELVIEW)
 
 
+# Explanation:
+# Forms two triangle edges, computes their cross product, normalizes the result,
+# and submits it with glNormal3f(). Correct per-face normals allow fixed-function
+# moonlight to shade procedural rocks and cliffs with visible depth.
 def apply_face_normal(point_a, point_b, point_c):
     ux = point_b[0] - point_a[0]
     uy = point_b[1] - point_a[1]
@@ -871,6 +971,10 @@ def apply_face_normal(point_a, point_b, point_c):
         glNormal3f(nx / length, ny / length, nz / length)
 
 
+# Explanation:
+# Defines a small irregular vertex set and connects it into triangular faces.
+# Each face receives its own normal and color variation, creating low-poly rocks
+# at different scales without loading models or storing buffered mesh data.
 def draw_low_poly_rock(scale=1.0, color=(0.21, 0.27, 0.27)):
     bottom = [(-25, -20, 0), (23, -24, 0), (31, 15, 0), (-18, 28, 0)]
     top = [(-13, -11, 28), (14, -13, 34), (19, 8, 30), (-9, 16, 38)]
@@ -897,6 +1001,10 @@ def draw_low_poly_rock(scale=1.0, color=(0.21, 0.27, 0.27)):
     glPopMatrix()
 
 
+# Explanation:
+# Generates deterministic height and edge variation from the cell indices, then
+# draws uneven triangular walls and a top surface. Neighbor-aware edges make the
+# map boundary look like damaged cliffs instead of identical rectangular cubes.
 def draw_irregular_cliff(row, col):
     half = CELL * 0.5
     base_height = 205.0 + ((row * 13 + col * 19) % 65)
@@ -945,6 +1053,10 @@ def draw_irregular_cliff(row, col):
         glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Draws a dark, translucent triangle fan slightly above the floor. Its stretched
+# circular shape visually anchors the tree to the terrain while avoiding shadow
+# maps, shaders, textures, and other techniques outside the course template.
 def draw_tree_shadow(radius=72.0):
     glDisable(GL_LIGHTING)
     glEnable(GL_BLEND)
@@ -963,6 +1075,10 @@ def draw_tree_shadow(radius=72.0):
     glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Constructs a trunk and branches from cylinders, then adds multiple colored
+# foliage spheres whose placement depends on the variation value. Reusing only
+# GLU/GLUT primitives keeps every tree procedural and requirement-compatible.
 def draw_stylized_tree(variation=0.35):
     draw_tree_shadow(78.0)
     bark = (0.16 + variation * 0.025, 0.105 + variation * 0.018, 0.075)
@@ -1003,6 +1119,10 @@ def draw_stylized_tree(variation=0.35):
     glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Reads a decoration dictionary produced by build_map(), applies its position,
+# rotation, and scale, and draws the requested tree, rock, shard, plant, grass,
+# or debris form. The outer matrix isolates each object's transformations.
 def draw_decoration(item):
     glPushMatrix()
     glTranslatef(item["x"], item["y"], 0.0)
@@ -1051,6 +1171,10 @@ def draw_decoration(item):
     glPopMatrix()
 
 
+# Explanation:
+# Chooses geometry according to a solid cell's ASCII symbol. Boundary walls use
+# irregular cliffs, fallen buildings use transformed cubes, rubble uses rocks,
+# and tree cells use procedural trunks and foliage; all remain collision-solid.
 def draw_solid_cell(row, col, symbol):
     x, y = world_from_cell(row, col)
     glPushMatrix()
@@ -1093,6 +1217,10 @@ def draw_solid_cell(row, col, symbol):
     glPopMatrix()
 
 
+# Explanation:
+# Converts the player's position to a map cell and renders only a square region
+# around it. Each visible cell becomes solid geometry or floor/trap geometry,
+# followed by its stored decorations, reducing work on the large 41x25 map.
 def draw_map():
     player_row = int((WORLD_H / 2.0 - player_y) // CELL)
     player_col = int((player_x + WORLD_W / 2.0) // CELL)
@@ -1114,6 +1242,10 @@ def draw_map():
                     draw_decoration(item)
 
 
+# Explanation:
+# Draws the mission's fixed Core as a beacon, pulsing energy sphere, rotating
+# wire rings, and orbiting particles. Its colors respond to recovered memories
+# and remaining Core health so the player can read its condition in the world.
 def draw_core():
     energy_ratio = min(1.0, energy_collected / float(ENERGY_REQUIRED))
     core_ratio = max(0.0, core_health / float(CORE_MAX_HEALTH))
@@ -1177,6 +1309,10 @@ def draw_core():
     glEnable(GL_LIGHTING)
     glPopMatrix()
 
+# Explanation:
+# Appears after all memories are recovered and marks where the player must return.
+# During the final upload it also draws the large required signal radius and a
+# bright arc whose length represents completed Core-link progress.
 def draw_core_activation_beacon():
     if energy_collected < ENERGY_REQUIRED or core_activated:
         return
@@ -1228,6 +1364,10 @@ def draw_core_activation_beacon():
     glPopMatrix()
 
 
+# Explanation:
+# For each active Anchor, draws its base, rotating pylons, corruption beam,
+# shield rings, exposed heart, and health bar. Once destroyed, the same entry is
+# shown as dark wreckage so the player can recognize a completed objective.
 def draw_rift_anchors():
     for anchor_index, anchor in enumerate(rift_anchors):
         if not anchor["active"]:
@@ -1325,6 +1465,10 @@ def draw_rift_anchors():
         glPopMatrix()
 
 
+# Explanation:
+# Keeps every unfinished memory visually readable with a pink beacon and ground
+# ring. Locked memories float above their live Anchor inside rotating purple
+# rings; unlocked memories drop lower and display a walk-into-beam prompt.
 def draw_crystals():
     """Draw memories as unmistakable pink objectives, even while shielded."""
     glDisable(GL_LIGHTING)
@@ -1411,6 +1555,10 @@ def draw_crystals():
     glEnable(GL_FOG)
     glEnable(GL_LIGHTING)
 
+# Explanation:
+# Creates particles with deterministic radial directions, upward velocity,
+# lifetime, and color. The global particle limit is checked first so repeated
+# impacts cannot grow the list indefinitely and reduce frame rate.
 def spawn_particle_burst(x, y, z, color, count=10, speed=150.0):
     available = max(0, MAX_PARTICLES - len(particles))
     for index in range(min(count, available)):
@@ -1427,12 +1575,20 @@ def spawn_particle_burst(x, y, z, color, count=10, speed=150.0):
             "color": color,
         })
 
+# Explanation:
+# Stores text, position, color, and remaining life for later drawing. If the
+# feedback list is full, the oldest message is removed first so combat events
+# remain readable without allowing an unbounded number of labels.
 def add_floating_text(x, y, z, text, color):
     if len(floating_texts) >= MAX_FLOATING_TEXTS:
         floating_texts.pop(0)
     floating_texts.append({"x": x, "y": y, "z": z, "text": text,
                            "color": color, "life": 0.9})
 
+# Explanation:
+# Draws every live particle as a colored OpenGL point. Brightness is multiplied
+# by remaining-life ratio to create a fade-out effect; movement and gravity are
+# calculated separately in update_visual_effects().
 def draw_particles():
     if not particles:
         return
@@ -1448,6 +1604,10 @@ def draw_particles():
     glEnd()
     glEnable(GL_LIGHTING)
 
+# Explanation:
+# Places each active notification at its 3D position and writes it with a GLUT
+# bitmap font. These labels rise and expire in update_visual_effects(), providing
+# immediate score feedback without adding permanent HUD clutter.
 def draw_floating_texts():
     glDisable(GL_LIGHTING)
     for item in floating_texts:
@@ -1457,6 +1617,10 @@ def draw_floating_texts():
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord(character))
     glEnable(GL_LIGHTING)
 
+# Explanation:
+# Measures distance and the dot product between the player's forward direction
+# and the direction to an enemy. A high dot product means the enemy lies close
+# to the crosshair, which controls when its health bar should be shown.
 def enemy_is_targeted(enemy):
     direction_x, direction_y = forward_vector()
     delta_x = enemy["x"] - player_x
@@ -1467,6 +1631,10 @@ def enemy_is_targeted(enemy):
     dot = (delta_x * direction_x + delta_y * direction_y) / distance
     return dot > 0.992
 
+# Explanation:
+# Converts current health into a 0-to-1 ratio, then draws a dark background and
+# a colored foreground bar above the enemy. The foreground width shrinks as
+# damage is taken and its color moves from green toward red.
 def draw_enemy_health_bar(enemy):
     health_ratio = max(0.0, enemy["health"] / float(enemy["max_health"]))
     glDisable(GL_LIGHTING)
@@ -1486,6 +1654,10 @@ def draw_enemy_health_bar(enemy):
     glEnd()
     glEnable(GL_LIGHTING)
 
+# Explanation:
+# Builds a Rift Beast from transformed primitive body parts, including a scary
+# face, claws, arms, and legs. Heading supports full 360-degree rotation, while
+# pulse, hit, stun, movement, and attack timers drive its visible animations.
 def draw_enemy(enemy):
     pulse = 1.0 + 0.045 * sin(enemy["pulse"])
     hover = 5.0 + sin(enemy["pulse"] * 0.72) * 5.0
@@ -1618,6 +1790,10 @@ def draw_enemy(enemy):
     glPopMatrix()
 
 
+# Explanation:
+# Switches to a camera-relative projection and draws the Guardian's visible arms
+# and energy weapon at the bottom of the screen. Movement bob, turning sway,
+# recoil, muzzle flash, and crouching offsets make first-person motion readable.
 def draw_first_person_hands():
     eye_height = SITTING_EYE_HEIGHT if is_sitting else STANDING_EYE_HEIGHT
     direction_x, direction_y = forward_vector()
@@ -1687,6 +1863,10 @@ def draw_first_person_hands():
     glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Renders every player bullet as a bright cyan sphere plus a line from its
+# previous to current position. The stored previous point forms a visible trail
+# and helps fast shots remain noticeable between simulation frames.
 def draw_bullets():
     glDisable(GL_LIGHTING)
     for bullet in bullets:
@@ -1704,6 +1884,10 @@ def draw_bullets():
     glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Uses each hostile projectile's current and previous position to draw a glowing
+# magenta orb and motion trail. Their different color clearly separates incoming
+# Anchor fire from the player's cyan weapon shots.
 def draw_enemy_projectiles():
     glDisable(GL_LIGHTING)
     for projectile in enemy_projectiles:
@@ -1721,6 +1905,10 @@ def draw_enemy_projectiles():
     glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Draws each sentry's tripod, rotating turret, remaining-life indicator, and a
+# temporary beam toward its last target. Heading and beam data are calculated by
+# update_sentries(), while this function only visualizes that state.
 def draw_sentries():
     for sentry in sentries:
         glPushMatrix()
@@ -1763,6 +1951,10 @@ def draw_sentries():
             glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Converts remaining EMP-effect time into an expanding radius and fading color,
+# then draws a cyan world-space ring around the stored discharge origin. It is a
+# visual effect only; stun and projectile clearing occur in activate_emp().
 def draw_emp_effect():
     if emp_effect_timer <= 0.0:
         return
@@ -1788,6 +1980,10 @@ def draw_emp_effect():
     glEnable(GL_LIGHTING)
 
 
+# Explanation:
+# Places a two-layer crosshair at the center of the current window. When combat
+# sets hit_marker_timer, four diagonal lines briefly appear around the reticle
+# so the player receives immediate confirmation that a shot hit a valid target.
 def draw_crosshair():
     center_x = window_width / 2.0
     center_y = window_height / 2.0
@@ -1819,6 +2015,10 @@ def draw_crosshair():
     end_overlay()
 
 
+# Explanation:
+# Filters out collected memories and compares squared distance from the player
+# to every remaining crystal. It returns the nearest crystal dictionary, or
+# None after all required memories have been recovered.
 def current_objective_crystal():
     """Return the nearest unfinished memory objective, if one remains."""
     available = [crystal for crystal in crystals if not crystal["taken"]]
@@ -1831,6 +2031,10 @@ def current_objective_crystal():
     return None
 
 
+# Explanation:
+# Uses the nearest unfinished memory as the destination during exploration.
+# Once no memories remain, it switches the destination to the fixed Grid Core,
+# allowing one HUD arrow to guide every stage of the mission.
 def current_objective_target():
     objective_crystal = current_objective_crystal()
     if objective_crystal is not None:
@@ -1838,6 +2042,10 @@ def current_objective_target():
     return core_position
 
 
+# Explanation:
+# Builds the complete 2D interface: player/Core/Grid statistics, equipment,
+# objective direction and distance, Anchor/memory progress, upload progress,
+# temporary instructions, controls, damage vignette, and game-state dialogs.
 def draw_hud():
     panel_margin = max(12.0, window_width * 0.012)
     panel_width = min(440.0, window_width * 0.46)
@@ -2030,6 +2238,10 @@ def draw_hud():
 
 
 
+# Explanation:
+# Creates the perspective projection using the current aspect ratio, derives a
+# look direction from yaw and pitch, and positions the eye at standing/crouching
+# height. Timed camera-shake offsets provide visible damage feedback.
 def setup_camera():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -2053,6 +2265,10 @@ def setup_camera():
               eye_z + direction_z * 300.0,
               0.0, 0.0, 1.0)
 
+# Explanation:
+# Enables the fixed-function states needed after sky or overlay rendering. Two
+# directional lights create cool moonlight and Rift fill light, while linear fog
+# blends distant geometry into the night-sky horizon.
 def enable_world_rendering():
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_NORMALIZE)
@@ -2075,6 +2291,10 @@ def enable_world_rendering():
     glFogf(GL_FOG_END, FOG_END)
 
 
+# Explanation:
+# Stores a safe minimum window size, updates the OpenGL viewport, and requests a
+# redraw. Other camera and HUD functions read these dimensions so perspective,
+# text, panels, and objective markers remain correctly positioned.
 def reshape(width, height):
     global window_width, window_height
     window_width = max(320, int(width))
@@ -2083,6 +2303,10 @@ def reshape(width, height):
     glutPostRedisplay()
 
 
+# Explanation:
+# Divides one requested movement into short substeps to prevent tunneling through
+# walls during slow frames. X and Y are tested separately at each step, allowing
+# the player to slide smoothly along a blocked wall instead of stopping abruptly.
 def try_move(delta_x, delta_y):
     global player_x, player_y
     # Split movement into small collision steps. This prevents snagging and
@@ -2100,11 +2324,19 @@ def try_move(delta_x, delta_y):
             player_y = next_y
 
 
+# Explanation:
+# Converts yaw from degrees to radians and returns its horizontal sine/cosine
+# direction. Movement and projectile spawning share this helper so the Guardian
+# always walks and fires toward the same first-person heading.
 def forward_vector():
     angle = radians(player_yaw)
     return sin(angle), cos(angle)
 
 
+# Explanation:
+# Creates a bullet slightly in front of the current eye/weapon position using
+# the player's forward direction. It also sets recoil and muzzle-flash timers;
+# update_bullets() later handles movement, collisions, hits, and misses.
 def fire_bullet():
     global weapon_recoil, muzzle_flash_timer
     direction_x, direction_y = forward_vector()
@@ -2126,6 +2358,10 @@ def fire_bullet():
     muzzle_flash_timer = 0.10
 
 
+# Explanation:
+# Rejects use when no charges remain or the cooldown is active. Otherwise it
+# spends one charge, stuns enemies inside EMP_RADIUS, removes hostile projectiles
+# in that radius, starts the visual pulse, and reports how many beasts were hit.
 def activate_emp():
     """Use one EMP charge to stun nearby enemies and erase hostile rounds."""
     global emp_charges, emp_cooldown, emp_effect_timer
@@ -2159,6 +2395,10 @@ def activate_emp():
     set_status(f"EMP discharged: {stunned} Rift Beast(s) stunned.", 2.0)
 
 
+# Explanation:
+# Attempts to place a turret in front of the player and falls back to the current
+# position if that point is blocked. The new dictionary stores lifetime, aiming,
+# cooldown, and beam state consumed later by update_sentries() and draw_sentries().
 def deploy_sentry():
     global sentry_charges
     if sentry_charges <= 0:
@@ -2185,6 +2425,10 @@ def deploy_sentry():
     set_status("Guardian sentry deployed. It will defend this sector for 48s.", 2.4)
 
 
+# Explanation:
+# Records held keys for smooth continuous input and handles one-time actions such
+# as pause, restart, ending choices, EMP, sentry placement, crouch, and jump. A
+# repeat/timeout check prevents one physical key press from toggling repeatedly.
 def keyboard_listener(key, mouse_x, mouse_y):
     global is_sitting, game_state, ending_choice, player_score
     key = key.lower()
@@ -2244,18 +2488,30 @@ def keyboard_listener(key, mouse_x, mouse_y):
         return
 
 
+# Explanation:
+# Clears a normal key from both the held-key set and fallback activity timer.
+# This lets movement or turning decelerate immediately when GLUT supplies key-up
+# callbacks, while older GLUT versions can still rely on the timeout system.
 def keyboard_up_listener(key, mouse_x, mouse_y):
     key = key.lower()
     held_keys.discard(key)
     key_activity_until.pop(key, None)
 
 
+# Explanation:
+# Assigns the configured positive jump speed and marks the player airborne.
+# Gravity and landing are intentionally handled by update_vertical_motion() so
+# input only starts the action and the physics system completes it.
 def start_jump():
     global vertical_velocity, is_grounded
     vertical_velocity = JUMP_SPEED
     is_grounded = False
 
 
+# Explanation:
+# Reads active W/S, A/D, and arrow-key states, approaches target movement/turning
+# velocities with frame-rate-independent smoothing, updates yaw/pitch, and calls
+# collision movement. It also calculates weapon bob and sway from motion.
 def update_player_navigation(dt):
     global player_yaw, player_pitch, weapon_bob_phase
     global movement_intensity, weapon_sway
@@ -2321,22 +2577,38 @@ def update_player_navigation(dt):
     player_pitch = max(-30.0, min(35.0, player_pitch + pitch_velocity * dt))
 
 
+# Explanation:
+# Adds a GLUT special key to the held set and refreshes its fallback timeout.
+# Arrow keys are stored separately because GLUT reports them through a different
+# callback from normal byte-valued keyboard keys.
 def special_key_listener(key, mouse_x, mouse_y):
     held_special_keys.add(key)
     special_activity_until[key] = time.perf_counter() + KEY_FALLBACK_TIMEOUT
 
 
+# Explanation:
+# Removes a GLUT special key and its timeout entry when released. This mirrors
+# keyboard_up_listener() and prevents horizontal or vertical aiming from
+# continuing after the player stops pressing an arrow key.
 def special_key_up_listener(key, mouse_x, mouse_y):
     held_special_keys.discard(key)
     special_activity_until.pop(key, None)
 
 
+# Explanation:
+# Accepts only a left-button-down event while the game is actively playing.
+# Other buttons, button-release events, paused screens, and ending states are
+# ignored so they cannot create unintended projectiles.
 def mouse_listener(button, state, mouse_x, mouse_y):
     if state == GLUT_DOWN and button == GLUT_LEFT_BUTTON and game_state == "playing":
         fire_bullet()
 
 
 # Gameplay updates
+# Explanation:
+# Integrates vertical position and gravity only while the player is airborne.
+# Reaching ground level clamps Z to zero, clears vertical velocity, and restores
+# the grounded flag so a later Space press can begin another jump.
 def update_vertical_motion(dt):
     global player_z, vertical_velocity, is_grounded
     if is_grounded:
@@ -2348,6 +2620,10 @@ def update_vertical_motion(dt):
         vertical_velocity = 0.0
         is_grounded = True
 
+# Explanation:
+# Advances each Anchor's hit flash, rotation, and fire cooldown. A live Anchor
+# within range aims a 3D corruption projectile toward the player's current eye
+# height; projectile speed and firing interval become harder at later stages.
 def update_rift_anchors(dt):
     stage = anchors_destroyed_count()
     for anchor_index, anchor in enumerate(rift_anchors):
@@ -2385,6 +2661,10 @@ def update_rift_anchors(dt):
             + anchor_index * 0.18,
         )
 
+# Explanation:
+# Integrates every Anchor projectile's 3D velocity and lifetime, removing shots
+# that expire, hit map geometry, or strike a tree. A shot near the player's eye
+# applies cooldown-protected damage, screen flash, shake, and HUD feedback.
 def update_enemy_projectiles(dt):
     global enemy_projectiles, player_health, damage_cooldown
     global damage_flash_timer, camera_shake_timer
@@ -2422,6 +2702,10 @@ def update_enemy_projectiles(dt):
     enemy_projectiles = remaining
 
 
+# Explanation:
+# Samples evenly spaced points from a sentry to a possible enemy target. If any
+# point enters a solid map cell or tree radius, line of sight is blocked; this
+# prevents auto-sentries from shooting unrealistically through level geometry.
 def has_clear_sentry_line(start_x, start_y, target_x, target_y):
     distance = sqrt((target_x - start_x) ** 2 + (target_y - start_y) ** 2)
     steps = max(1, int(distance / 55.0))
@@ -2435,6 +2719,10 @@ def has_clear_sentry_line(start_x, start_y, target_x, target_y):
     return True
 
 
+# Explanation:
+# Reduces lifetime/cooldowns, finds the nearest visible enemy inside range, turns
+# the turret toward it, and applies one damage when aligned and ready. Expired
+# sentries and defeated targets are removed, while beam state feeds rendering.
 def update_sentries(dt):
     global sentries, player_score
     surviving_sentries = []
@@ -2486,6 +2774,10 @@ def update_sentries(dt):
     enemies[:] = [enemy for enemy in enemies if enemy["health"] > 0]
 
 
+# Explanation:
+# Counts a projectile that expired or struck scenery without hitting an enemy or
+# Anchor. It reduces Grid integrity and score, creates floating feedback, and
+# periodically warns the player that inaccurate fire can cause game over.
 def register_missed_shot(x, y, z):
     global grid_integrity, missed_shots, player_score
     missed_shots += 1
@@ -2497,6 +2789,10 @@ def register_missed_shot(x, y, z):
         set_status("Missed rounds destabilize the Aether Grid.", 1.6)
 
 
+# Explanation:
+# Subtracts health only from an active Anchor and awards hit feedback. On the
+# final hit it marks the shield inactive, gives a destruction bonus, forces an
+# enemy spawn, creates a larger burst, and announces that its memory is unlocked.
 def damage_rift_anchor(anchor, damage=1):
     global player_score, hit_marker_timer, enemy_spawn_timer
     if not anchor["active"]:
@@ -2524,6 +2820,10 @@ def damage_rift_anchor(anchor, damage=1):
     return True
 
 
+# Explanation:
+# Advances every player bullet and checks outcomes in priority order: lifetime,
+# scenery/tree collision, active Anchor hit, then enemy hit. Valid hits award
+# score/effects; all unresolved bullets remain active for the next frame.
 def update_bullets(dt):
     global player_score, hit_marker_timer
     remaining = []
@@ -2585,6 +2885,10 @@ def update_bullets(dt):
     enemies[:] = [enemy for enemy in enemies if enemy["health"] > 0]
 
 
+# Explanation:
+# Updates all Rift Beast timers and skips movement while stunned. Each active AI
+# selects the player when detected/angered or the Core otherwise, follows a BFS
+# waypoint, rotates smoothly, moves with stage pressure, and attacks in range.
 def update_enemies(dt):
     global player_health, core_health, damage_cooldown, core_damage_cooldown
     global damage_flash_timer, camera_shake_timer
@@ -2618,7 +2922,8 @@ def update_enemies(dt):
         delta_y = waypoint_y - enemy["y"]
         waypoint_distance = sqrt(delta_x * delta_x + delta_y * delta_y)
 
-        # #######Turn through the shortest angle while keeping heading in 0..360.
+        # Compare wrapped angles so the Beast turns along the shortest arc
+        # instead of rotating almost a full circle when crossing 0/360 degrees.
         look_delta_x = delta_x if waypoint_distance > 0.001 else target_x - enemy["x"]
         look_delta_y = delta_y if waypoint_distance > 0.001 else target_y - enemy["y"]
         if abs(look_delta_x) + abs(look_delta_y) > 0.001:
@@ -2664,6 +2969,10 @@ def update_enemies(dt):
             enemy["attack_cooldown"] = enemy["attack_interval"]
 
 
+# Explanation:
+# Calculates a target population from elapsed time and destroyed Anchors, using
+# the full maximum during the final upload. When below target and off cooldown,
+# it chooses a spawn away from the player and schedules the next replacement.
 def update_enemy_spawning(dt):
     global enemy_spawn_timer, enemy_spawn_cursor
     if core_upload_active:
@@ -2698,6 +3007,10 @@ def update_enemy_spawning(dt):
         enemy_spawn_timer = 1.0
 
 
+# Explanation:
+# Finds the map cell beneath the player and checks whether it is a hazard whose
+# animated spikes are currently raised. Low feet and an expired damage cooldown
+# cause health loss, screen feedback, and a timing/jumping warning.
 def update_hazards(dt):
     global player_health, damage_cooldown, damage_flash_timer, camera_shake_timer
     row, col = cell_indices_from_world(player_x, player_y)
@@ -2712,6 +3025,10 @@ def update_hazards(dt):
         set_status("Spike trap hit! Time the cycle or jump over it.", 1.4)
 
 
+# Explanation:
+# Measures distance to every unfinished memory. Entering a locked memory area
+# shows its remaining Anchor health but cannot collect it; entering an unlocked
+# one awards score/energy, saves a checkpoint, and advances the HUD objective.
 def update_pickups():
     global player_score, energy_collected, checkpoint_x, checkpoint_y
 
@@ -2741,6 +3058,10 @@ def update_pickups():
                 set_status("Core energy restored! Return to the Grid Core.", 4.5)
 
 
+# Explanation:
+# Removes one life after health reaches zero. With lives remaining it restores
+# position, health, vertical state, and temporary protection at the latest saved
+# checkpoint; reaching zero lives changes the mission to game-over state.
 def respawn_player():
     global player_x, player_y, player_z, vertical_velocity
     global player_health, player_lives, damage_cooldown, game_state
@@ -2758,6 +3079,10 @@ def respawn_player():
     set_status("Respawned at the latest checkpoint.", 3.0)
 
 
+# Explanation:
+# First ends the mission if Core health or Grid integrity reaches zero. After all
+# memories return, approaching the Core starts a maximum-pressure upload; time
+# inside its radius adds progress, leaving drains progress, and 100% opens ECHO.
 def update_objective(dt):
     global game_state, player_score, core_activated
     global core_upload_active, core_upload_progress, enemy_spawn_timer
@@ -2799,6 +3124,10 @@ def update_objective(dt):
             set_status("ECHO is awake. Choose humanity's future: press 1 or 2.", 10.0)
 
 
+# Explanation:
+# Decrements all short visual timers, integrates particle velocity/gravity, and
+# raises floating text. Expired particles and labels are filtered out each frame
+# so effects animate smoothly without leaving stale objects in memory.
 def update_visual_effects(dt):
     global particles, floating_texts, muzzle_flash_timer, weapon_recoil
     global hit_marker_timer, damage_flash_timer, camera_shake_timer
@@ -2834,6 +3163,10 @@ def update_visual_effects(dt):
     floating_texts = alive_texts
 
 
+# Explanation:
+# Runs only during active play, advances global timers, and calls movement,
+# physics, combat, AI, spawning, hazards, pickups, objectives, and respawning in
+# a deliberate order so collisions and state changes remain predictable.
 def update_game(dt):
     global elapsed_game_time, damage_cooldown, core_damage_cooldown
     global status_message_timer
@@ -2859,6 +3192,10 @@ def update_game(dt):
         respawn_player()
 
 
+# Explanation:
+# Clears color/depth buffers, configures the camera, and draws sky, world, Core,
+# objectives, equipment, enemies, projectiles, effects, first-person hands, and
+# HUD in the required order. Double-buffer swapping presents the completed frame.
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glViewport(0, 0, window_width, window_height)
@@ -2886,6 +3223,10 @@ def display():
     glutSwapBuffers()
 
 
+# Explanation:
+# Measures real elapsed time with a monotonic high-resolution clock and caps one
+# step at 0.05 seconds to avoid unstable physics after a pause or slow frame.
+# It advances gameplay and asks GLUT to redraw continuously.
 def idle():
     global last_frame_time
     current_time = time.perf_counter()
@@ -2898,6 +3239,10 @@ def idle():
     glutPostRedisplay()
 
 
+# Explanation:
+# Creates the double-buffered depth-enabled GLUT window, initializes fixed-
+# function OpenGL and the shared GLU quadric, resets the game, registers display,
+# resize, input, and idle callbacks, then hands control to glutMainLoop().
 def main():
     global quadric, key_up_callbacks_enabled
     glutInit()
