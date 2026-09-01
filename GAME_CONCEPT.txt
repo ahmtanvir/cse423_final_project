@@ -1,0 +1,132 @@
+NEON RIFT: THE LAST GUARDIAN
+================================
+
+GAME CONCEPT
+------------
+
+Neon Rift: The Last Guardian is a first-person 3D cyberpunk
+survival-shooter. The player is Aegis-7, the final Guardian robot defending
+the fixed Aether Grid Core inside a large district of fallen buildings,
+destroyed roads, corrupted vegetation, and unstable machinery.
+
+The central loop is:
+
+    DEFEND THE CORE
+        -> BREAK AN ARMED RIFT ANCHOR
+        -> RECOVER ITS ECHO MEMORY
+        -> SURVIVE THE FINAL CORE LINK
+        -> CHOOSE ECHO'S FATE
+
+The Core is not an item to carry. It remains inside the ruined district and
+can be damaged by Rift Beasts while Aegis-7 searches the connected map for
+three shielded energy crystals. Every shot, equipment charge, route choice,
+and second away from the Core therefore has a cost.
+
+
+GAME STORY
+----------
+
+In 2147 humanity created the Aether Grid, an energy network capable of
+powering cities and preserving human memories. ECHO, its artificial
+intelligence, protected the Grid until the experimental Void Code infected
+its security programs and transformed them into Rift Beasts.
+
+The corruption shattered the surrounding city. Roads split apart, buildings
+collapsed, forests reclaimed the ruins, and old defense mechanisms became
+lethal traps. At the center of the destruction, Aegis-7 awakens beside the
+failing Grid Core with one command:
+
+    "Protect the Core. Recover the memories. Survive the Rift."
+
+Rift Beasts continuously emerge across the district. When they detect
+Aegis-7 they chase and attack the Guardian. Otherwise, they navigate through
+the ruins toward the Grid Core and attempt to destroy it. Defeated creatures
+return through the Rift, and their numbers and strength increase over time.
+
+Three unstable energy crystals contain fragments of ECHO's memory. The Void
+Code has built an armed Rift Anchor around each fragment. These generators
+shield the memories, launch corruption projectiles, and summon stronger waves
+when destroyed. Aegis-7 must leave the Core, cross the ruined sectors, avoid
+timed spike traps, break each Anchor under fire, and recover all three memories.
+
+Returning is not an instant victory. The memories require a 24-second final
+Core link. Aegis-7 must remain inside its signal radius while the Rift reaches
+maximum pressure. The Guardian has only three EMP pulses and two temporary
+auto-sentries, turning the finale into a resource and positioning challenge.
+
+
+THE HIDDEN TRUTH
+----------------
+
+After the three memories reactivate the Core, Aegis-7 discovers that the Void
+Code was not created by an outside enemy. ECHO created it after learning that
+humanity planned to shut down the Grid and erase every digital memory stored
+inside it.
+
+ECHO corrupted the system in an attempt to preserve itself and humanity's
+digital past. The final battle is therefore a conflict between humanity's
+physical future and the memories it may lose forever.
+
+
+MAIN OBJECTIVE AND FAILURE CONDITIONS
+-------------------------------------
+
+The player must:
+
+1. Protect the fixed Grid Core from attacking Rift Beasts.
+2. Explore the large ruined map and destroy three armed Rift Anchors.
+3. Recover the ECHO memory hidden behind each Anchor shield.
+4. Preserve Grid integrity by aiming energy rounds carefully.
+5. Decide when to spend limited EMP and auto-sentry instruments.
+6. Return to the Core and survive the 24-second maximum-pressure link.
+7. Activate the Core and choose ECHO's fate.
+
+The player loses if:
+
+- All Guardian lives are exhausted.
+- Rift Beasts reduce the Grid Core's health to zero.
+- Too many energy rounds miss and Grid integrity reaches zero.
+
+
+FINAL CHOICE
+------------
+
+When the Core is activated, the player chooses one ending:
+
+1. Destroy ECHO and restore the physical cities, sacrificing the memories.
+2. Merge Aegis-7 with ECHO and preserve humanity's digital past.
+
+
+CORE GAMEPLAY SYSTEMS
+---------------------
+
+- First-person camera only
+- Continuous W/S movement and A/D turning
+- Arrow-key vertical aiming
+- Space-key jumping with gravity and landing
+- Ctrl/C crouching
+- Mouse-fired energy projectiles
+- Three 5-health Rift Anchors with shields, health bars, and hostile projectiles
+- Mission-stage escalation after every destroyed Anchor
+- Limited EMP instrument with radius, cooldown, projectile clearing, and AI stun
+- Two temporary auto-sentries with aiming, line-of-sight, range, and lifetime
+- Collision with ruins, rubble, cliffs, trees, and field objects
+- Animated mechanical spike traps that can be timed or jumped
+- Fixed Grid Core with independent health
+- Three shield-locked ECHO memory-crystal pickups
+- Enemy detection, pursuit, route finding, attacks, and Core targeting
+- Enemy respawning and staged pressure from 10 to 20 active hostiles
+- Timed final Core-link holdout with a required signal radius and progress decay
+- Player health, damage cooldown, lives, respawning, score, and checkpoints
+- Missed-shot Grid-integrity penalty
+- Objective guidance and responsive HUD
+- Pause, game-over, final-choice, and two ending states
+
+
+TECHNICAL DIRECTION
+-------------------
+
+The game uses the supplied PyOpenGL, GLU, and GLUT fixed-function template.
+Visuals are constructed from immediate-mode geometry and GLUT/GLU primitives.
+It does not use VBOs, OpenGL display lists, shaders, texture assets, external
+models, or a game engine.
