@@ -1,0 +1,281 @@
+NEON RIFT: THE LAST GUARDIAN
+DETAILED GAME FEATURES
+========================================
+
+
+1. 3D CYBERPUNK ENVIRONMENT
+----------------------------
+
+The game is presented as a first-person 3D cyberpunk survival shooter built
+with PyOpenGL, GLU, and GLUT. The ruined city contains:
+
+- Collapsed buildings and destroyed roads.
+- Rubble, cliffs, bridges, and solid environmental objects.
+- Trees, corrupted vegetation, rocks, grass, and other decorations.
+- Mechanical spike traps and unstable field hazards.
+- A fixed Aether Grid Core at the center of the mission.
+
+The environment is generated from a grid-based map layout. The map controls
+walkable areas, obstacles, enemy spawn locations, crystal locations, traps,
+and the Core position. Buildings, rubble, and trees affect player movement,
+enemy navigation, and projectile travel, allowing the player to use cover.
+
+
+2. MATHEMATICS, PHYSICS, AND SIMULATION
+---------------------------------------
+
+The game uses mathematical calculations for movement, aiming, combat,
+collision detection, enemy behavior, pickups, equipment ranges, and visual
+animation.
+
+Distance and vector calculations:
+    Euclidean distance is calculated from coordinate differences using:
+
+        distance = sqrt(dx^2 + dy^2)
+
+    Squared distance checks are used for range comparisons such as EMP radius,
+    enemy detection, pickup collection, and collision checks.
+
+Trigonometric aiming:
+    Player yaw and pitch are converted from degrees to radians. Sine and
+    cosine generate the forward direction used for movement and shooting.
+    The atan2 function calculates enemy headings and the direction displayed
+    by the objective arrow.
+
+Crosshair targeting:
+    A dot product compares the player's forward direction with the direction
+    to an enemy. This determines whether an enemy is close enough to the
+    crosshair to display its health bar and provide targeting feedback.
+
+Gravity and jumping:
+    Jumping uses vertical physics. A jump begins with a vertical velocity of
+    430 units per second. Gravity reduces the velocity by 980 units per second
+    squared. Player height and vertical velocity are updated with elapsed
+    frame time until the player reaches the ground.
+
+    The landing system clamps the player's height to zero, resets vertical
+    velocity, and allows the next jump. Crouching changes the eye height and
+    movement speed.
+
+Collision and movement:
+    The player's collision area is treated as a circle. Center and surrounding
+    sample points are checked against solid map cells and procedural tree
+    trunks. Movement is divided into small substeps to prevent the player from
+    passing through walls during slow frames. Separate X and Y checks allow
+    smooth sliding along blocked surfaces.
+
+Frame-rate independence:
+    The game uses delta time so movement, physics, projectiles, cooldowns,
+    spawning, damage, lifetimes, and objectives behave consistently across
+    different frame rates. A maximum update step prevents unstable physics
+    after a pause or a slow frame.
+
+Animation mathematics:
+    Sine and cosine functions animate floating crystals, Rift Anchors, enemy
+    hovering, trap cycles, weapon bob, weapon sway, particles, visual pulses,
+    and other timed effects.
+
+
+3. MISSION AND OBJECTIVE SYSTEM
+-------------------------------
+
+The mission has a clear progression:
+
+1. Protect the Aether Grid Core.
+2. Find and destroy three armed Rift Anchors.
+3. Collect the three ECHO memory crystals unlocked by the Anchors.
+4. Return to the Core and complete the final Core link.
+5. Choose ECHO's fate after the link reaches 100%.
+
+The objective arrow points toward the nearest unfinished crystal and later
+points back to the Grid Core. Collecting a crystal updates the objective and
+creates a new respawn checkpoint.
+
+
+4. RIFT ANCHORS AND MEMORY CRYSTALS
+------------------------------------
+
+There are three magenta Rift Anchors and three pink ECHO memory crystals.
+Each Anchor has 5 health and protects one crystal with a shield.
+
+- Anchors launch corruption projectiles at the player.
+- Anchor projectiles cause 14 damage.
+- The Anchor shield disappears after the Anchor is destroyed.
+- A destroyed Anchor triggers a new enemy wave.
+- Anchor fire becomes faster as the mission progresses.
+- Each collected crystal awards 50 points.
+- Each collected crystal creates a checkpoint.
+
+The player must shoot an Anchor's glowing heart five times before its matching
+memory crystal can be collected.
+
+
+5. COMBAT AND RISK MANAGEMENT
+-----------------------------
+
+The player fires energy projectiles using the center crosshair and first-person
+aiming controls.
+
+- A successful enemy hit awards 10 points.
+- An Anchor hit awards 15 points.
+- Destroying an Anchor awards an additional 100 points.
+- Brute Rift Beasts require more hits than standard enemies.
+- Projectiles can collide with enemies, Anchors, trees, buildings, rubble,
+  and other environmental objects.
+
+Missed shots create a strategic risk. A projectile that expires or hits scenery
+without striking an enemy or Anchor reduces Grid integrity by 4%. If Grid
+integrity reaches zero, the mission ends.
+
+
+6. ENEMY AI AND DYNAMIC DIFFICULTY
+----------------------------------
+
+Rift Beasts use detection, pursuit, navigation, attack, and Core-targeting
+behaviors.
+
+Standard Rift Beast:
+    A fast corrupted creature that can chase Aegis-7 or travel toward the
+    Grid Core. It has animated movement and alternating claw attacks.
+
+Brute Rift Beast:
+    A larger and stronger enemy with more health and greater attack damage.
+
+Enemy behavior includes:
+
+- Detecting and pursuing the player.
+- Becoming aggressive after being attacked.
+- Navigating around solid map areas.
+- Attacking the player at close range.
+- Travelling toward and damaging the Grid Core.
+- Rotating toward targets with smooth heading changes.
+- Respawning after defeat.
+- Showing health bars when targeted or recently damaged.
+
+Enemies use breadth-first-search navigation fields to find routes around
+buildings and other blocked cells instead of moving directly through them.
+
+The game begins with 10 active enemies. Enemy speed, strength, spawn frequency,
+and population increase as time passes. Destroying each Anchor adds two more
+enemies to the target population. The final Core link increases the target to
+20 hostiles and adds another speed boost.
+
+
+7. GUARDIAN SUPPORT EQUIPMENT
+-----------------------------
+
+EMP Pulse — Q
+    The player has 3 EMP charges. Each pulse stuns nearby Rift Beasts for
+    3.6 seconds and clears hostile projectiles within its radius. EMP does not
+    damage enemies and has an 8-second recharge.
+
+Auto-Sentry — E
+    The player has 2 deployable auto-sentries. Each sentry remains active for
+    48 seconds, automatically aims at visible enemies, and fires within range.
+    Buildings, trees, and other obstacles block its line of sight.
+
+EMP and sentry charges are limited for the entire mission and are not restored
+after respawning. Their use is intended to be strategic, especially during
+Anchor fights and the final Core defense.
+
+
+8. CORE DEFENSE AND FINAL LINK
+------------------------------
+
+The Aether Grid Core is a fixed structure with independent health. Rift Beasts
+can attack it while the player is exploring other areas.
+
+After all three memories are collected, returning close to the Core starts the
+final 24-second Core link. A large green signal ring marks the required area.
+
+- Link progress increases while the player remains inside the ring.
+- Link progress decreases when the player leaves the ring.
+- Enemy pressure reaches its maximum during the link.
+- The ending choice appears only after progress reaches 100%.
+
+
+9. PLAYER SURVIVAL AND PROGRESSION
+----------------------------------
+
+Aegis-7 starts with 100 HP and 3 lives. Enemy attacks and active spike traps
+reduce health. A short damage cooldown prevents multiple damage events from
+removing all health in a single instant.
+
+When health reaches zero, one life is lost. If lives remain, the player
+respawns with full health at the latest collected-crystal checkpoint. Losing
+all three lives causes a game over.
+
+The HUD tracks player health, lives, score, Core health, Grid integrity,
+missed shots, Anchor progress, memory progress, equipment charges, hostiles,
+Core-link progress, objective direction, and survival time.
+
+
+10. FIELD HAZARDS AND COLLISION
+-------------------------------
+
+Mechanical spike traps contain nine spikes and operate on timed cycles:
+
+- Amber lights indicate that a trap is preparing or retracted.
+- Red lights and raised spikes indicate danger.
+- Active spikes cause heavy damage when the player is close to the ground.
+- The player can cross when the spikes are retracted, move around the plate,
+  or jump over it.
+
+Environmental collision also applies to buildings, fallen structures, rubble,
+trees, map boundaries, and other solid field objects. These objects provide
+cover and influence enemy pathfinding.
+
+
+11. VISUAL EFFECTS AND GAME STATES
+-----------------------------------
+
+The OpenGL rendering system includes:
+
+- Neon cyan, magenta, red, and green color themes.
+- Animated Rift Anchors and rotating memory crystals.
+- Floating enemies with animated attacks and stun indicators.
+- Energy projectiles and hostile corruption projectiles.
+- EMP rings and particle bursts.
+- Floating score text and hit markers.
+- Muzzle flashes and weapon recoil.
+- Weapon bob and sway during movement.
+- Damage flashes and camera shake.
+- Health bars and progress bars.
+- Fog, sky effects, terrain decoration, and lighting-style color feedback.
+
+The game includes playing, paused, game-over, victory, restart, and
+ending-choice states.
+
+
+12. BRANCHING STORY ENDINGS
+---------------------------
+
+After the final Core link reaches 100%, the player chooses ECHO's fate:
+
+Press 1 — Destroy ECHO
+    Restore the physical cities, but sacrifice the stored digital memories.
+    Ending screen: CITIES RESTORED.
+
+Press 2 — Merge with ECHO
+    Merge Aegis-7 with ECHO and preserve humanity's digital past.
+    Ending screen: MEMORIES PRESERVED.
+
+Both choices complete the game and award 500 points.
+
+
+13. WIN AND LOSS CONDITIONS
+---------------------------
+
+The player wins by:
+
+- Destroying all three Rift Anchors.
+- Recovering all three ECHO memory crystals.
+- Returning to the Grid Core.
+- Completing the 24-second Core link.
+- Selecting one of the two endings.
+
+The player loses if:
+
+- All three Guardian lives are exhausted.
+- Rift Beasts reduce Core health to zero.
+- Missed projectiles reduce Grid integrity to zero.
