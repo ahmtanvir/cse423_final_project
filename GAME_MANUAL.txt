@@ -50,8 +50,63 @@ To complete the game:
 11. When the link reaches 100%, choose ECHO's fate by pressing 1 or 2.
 
 
-3. CONTROLS
------------
+3. FEATURED GAME FEATURES
+-------------------------
+
+FIRST-PERSON 3D CYBERPUNK WORLD
+    Explore a large ruined city with collapsed buildings, destroyed roads,
+    rubble, trees, cliffs, bridges, and other environmental decorations.
+
+CORE DEFENSE OBJECTIVE
+    Protect the fixed Aether Grid Core while exploring the district. Rift
+    Beasts can attack the Core even when Aegis-7 is far away.
+
+THREE-STAGE MEMORY MISSION
+    Destroy 3 Rift Anchors and recover 3 pink ECHO memory crystals. Each
+    Anchor has 5 health, fires corruption projectiles, and increases enemy
+    pressure when destroyed.
+
+INTELLIGENT RIFT BEAST AI
+    Enemies detect and chase Aegis-7, navigate around buildings and obstacles,
+    attack the player, target the Core, and respawn as the mission continues.
+    Standard and Brute Rift Beasts provide different levels of threat.
+
+DYNAMIC DIFFICULTY
+    Enemy speed, strength, spawn frequency, and active population increase as
+    time passes and Anchors are destroyed. The final Core link can contain up
+    to 20 active hostiles.
+
+GUARDIAN INSTRUMENTS
+    Use 3 limited EMP pulses to stun nearby enemies and clear enemy
+    projectiles. Deploy 2 temporary auto-sentries that target visible enemies
+    within range. Equipment charges are limited for the entire mission.
+
+RISK-BASED COMBAT
+    Energy rounds damage enemies and Anchors, but missed shots reduce Grid
+    integrity. If Grid integrity reaches 0%, the mission ends.
+
+FINAL CORE-LINK CHALLENGE
+    After recovering all memories, return to the Core and remain inside the
+    green signal ring for 24 seconds. Leaving the ring causes link progress to
+    decrease while enemies attack at maximum pressure.
+
+MULTIPLE STORY ENDINGS
+    After the Core link reaches 100%, choose to destroy ECHO and restore the
+    cities, or merge with ECHO and preserve humanity's digital memories.
+
+COMPLETE PLAYER AND HUD SYSTEMS
+    The game includes health, 3 lives, checkpoint respawning, score rewards,
+    objective guidance, health bars, Core and Grid status, pause, game-over,
+    victory, and restart states.
+
+VISUAL EFFECTS AND FEEDBACK
+    Neon-colored OpenGL visuals include animated Anchors, crystals, enemies,
+    spike traps, projectiles, particles, floating score text, muzzle flashes,
+    hit markers, weapon recoil, damage flashes, and camera shake.
+
+
+4. CONTROLS
+------------
 
 W                 Move forward
 S                 Move backward
@@ -76,7 +131,7 @@ The game uses a first-person camera only. Movement accelerates and slows
 smoothly while keys are held or released.
 
 
-4. UNDERSTANDING THE HUD
+5. UNDERSTANDING THE HUD
 ------------------------
 
 HP
@@ -124,7 +179,7 @@ TIME
     Shows survival time. Enemy pressure increases as time passes.
 
 
-5. RIFT ANCHORS AND PINK MEMORIES
+6. RIFT ANCHORS AND PINK MEMORIES
 ---------------------------------
 
 The floating pink objects are ECHO memory crystals. There are 3 in total,
@@ -159,7 +214,7 @@ Return to the large glowing Core near the starting area and walk close to it.
 This starts the final defense; it does not immediately finish the mission.
 
 
-6. THE GRID CORE
+7. THE GRID CORE
 ----------------
 
 The Core is the main object that Aegis-7 must protect. It has independent
@@ -182,7 +237,7 @@ enemy target rises to 20, enemies move faster, and replacements arrive more
 quickly. The ending choice appears only after the link reaches 100%.
 
 
-7. COMBAT AND PROJECTILES
+8. COMBAT AND PROJECTILES
 -------------------------
 
 Aim with A/D or the arrow keys and fire with the left mouse button. The center
@@ -201,7 +256,7 @@ when it expires or hits a wall, building, rubble, or tree without striking an
 enemy. Fire carefully instead of repeatedly shooting without a target.
 
 
-8. ENEMIES
+9. ENEMIES
 ----------
 
 Standard Rift Beast
@@ -218,7 +273,7 @@ two more enemies to the target population. The final Core link raises the
 target to 20 hostiles and gives them an additional speed boost.
 
 
-9. GUARDIAN INSTRUMENTS
+10. GUARDIAN INSTRUMENTS
 -----------------------
 
 EMP Pulse — Q
@@ -237,7 +292,7 @@ Both instruments have limited mission-wide charges; they are not refilled
 after use or after respawning.
 
 
-10. FIELD TRAPS
+11. FIELD TRAPS
 ---------------
 
 Dark metal pressure plates containing nine spikes are placed in several
@@ -251,7 +306,7 @@ to jump over it. Raised spikes cause heavy damage when the player's feet are
 close to the ground. A correctly timed jump avoids the damage.
 
 
-11. HEALTH, LIVES, AND RESPAWNING
+12. HEALTH, LIVES, AND RESPAWNING
 ---------------------------------
 
 Aegis-7 starts with:
@@ -267,7 +322,7 @@ Damage has a short cooldown, preventing every enemy or trap from removing all
 health in one frame.
 
 
-12. WIN AND LOSS CONDITIONS
+13. WIN AND LOSS CONDITIONS
 ----------------------------
 
 YOU WIN THE MISSION BY:
@@ -285,7 +340,7 @@ YOU LOSE THE MISSION IF:
 - Missed projectiles reduce Grid integrity to 0%.
 
 
-13. FINAL DECISION
+14. FINAL DECISION
 ------------------
 
 After activating the Core, ECHO reveals that it created the Void Code to stop
@@ -302,7 +357,7 @@ is to make the player choose between humanity's physical future and its
 digital past.
 
 
-14. SURVIVAL TIPS
+15. SURVIVAL TIPS
 -----------------
 
 - Check CORE and GRID percentages frequently.
