@@ -54,7 +54,35 @@ To complete the game:
     controls walkable areas, obstacles, enemy spawn points, crystal locations,
     traps, and the position of the Grid Core.
 
-    MISSION AND OBJECTIVE SYSTEM
+MATHEMATICS, PHYSICS, AND SIMULATION
+    The game uses coordinate and vector mathematics for movement, aiming,
+    projectile travel, enemy behavior, pickups, and equipment ranges.
+    Euclidean distance is calculated from coordinate differences using
+    sqrt(dx^2 + dy^2), while squared distance checks are used when only a
+    range comparison is needed.
+
+    Player yaw and pitch are converted from degrees to radians. Sine and cosine
+    generate the forward direction for movement and shooting, and atan2 finds
+    enemy headings and the direction shown by the objective arrow. A dot
+    product determines whether an enemy is close to the player's crosshair.
+
+    Jumping uses vertical physics. When a jump begins, vertical velocity is
+    set to 430 units per second. Gravity reduces that velocity by 980 units per
+    second squared, and the player's height is updated using the elapsed frame
+    time. Landing clamps the height to ground level and resets the velocity.
+
+    Movement is collision-tested in small substeps. This prevents the player
+    from passing through walls during a slow frame and allows smooth sliding
+    along blocked surfaces. Circle-radius checks detect contact with map
+    obstacles and procedural tree trunks.
+
+    Enemies use breadth-first-search navigation fields to find routes around
+    solid cells. Frame-rate-independent delta-time updates control movement,
+    projectile motion, cooldowns, lifetimes, spawning, health effects, and
+    the final Core-link timer. Sine and cosine functions also drive floating
+    objects, trap cycles, enemy motion, weapon bob, and other animations.
+
+MISSION AND OBJECTIVE SYSTEM
     The mission is organized around three armed Rift Anchors. Each Anchor
     protects one pink ECHO memory crystal. The player must destroy an Anchor,
     collect its unlocked memory, and repeat the process at all three sites
